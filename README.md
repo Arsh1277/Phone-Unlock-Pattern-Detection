@@ -28,7 +28,7 @@ No install needed. Open `index.html` in any browser.
 
 ## Live demo
 
-https://YOUR-USERNAME.github.io/phone-unlock-pattern-detection/
+https://arsh1277.github.io/Phone-Unlock-Pattern-Detection/
 
 ## Note
 
