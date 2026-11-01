@@ -4,43 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Phone Unlock Pattern Detection</title>
-<style>
-:root{--bg:#eef1f4;--panel:#fff;--ink:#1b2430;--mute:#5d6b7a;--line:#d5dbe2;--accent:#1f6feb;--ok:#1a8f5a;--mid:#b7791f;--bad:#c93c3c;
-box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10161d;--panel:#18212b;--ink:#e6ebf1;--mute:#93a1b1;--line:#2a3643;--accent:#5b9dff;--ok:#43c487;--mid:#e0a645;--bad:#ef6b6b}}
-:root[data-theme="dark"]{--bg:#10161d;--panel:#18212b;--ink:#e6ebf1;--mute:#93a1b1;--line:#2a3643;--accent:#5b9dff;--ok:#43c487;--mid:#e0a645;--bad:#ef6b6b}
-*{box-sizing:border-box}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;line-height:1.5}
-main{max-width:880px;margin:0 auto;padding:24px 16px 40px}
-h1{font-size:1.6rem;margin:0 0 4px;letter-spacing:-.01em}
-.sub{color:var(--mute);margin:0 0 20px;max-width:60ch}
-.wrap{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:20px;align-items:start}
-@media(max-width:700px){.wrap{grid-template-columns:1fr}}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
-#pad{width:100%;max-width:340px;aspect-ratio:1;display:block;margin:0 auto;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
-.dot{fill:var(--line)}.dot.on{fill:var(--accent)}
-.ring{fill:none;stroke:var(--accent);stroke-width:2;opacity:0}.ring.on{opacity:.5}
-.num{font-size:12px;fill:var(--mute);text-anchor:middle;pointer-events:none}
-#trail{fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
-.row{display:flex;gap:8px;margin-top:12px;justify-content:center;flex-wrap:wrap}
-button{font:inherit;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
-button:hover{border-color:var(--accent)}button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-#hint{text-align:center;color:var(--mute);font-size:.9rem;margin:10px 0 0;min-height:1.4em}
-.empty{color:var(--mute);margin:0}
-.big{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.score{font-size:2.4rem;font-weight:700;line-height:1}
-.label{font-weight:600}
-.bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin:10px 0 14px}
-.bar i{display:block;height:100%;width:0;transition:width .3s}
-dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:0 0 14px}
-dt{color:var(--mute)}dd{margin:0;word-break:break-word}
-ul{margin:0;padding-left:20px}li{margin:4px 0}
-h2{font-size:1rem;margin:14px 0 6px}
-.seq{font-variant-numeric:tabular-nums;font-weight:600}
-.note{color:var(--mute);font-size:.85rem;margin-top:16px}
-@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
-</style>
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <main>
@@ -58,80 +22,6 @@ h2{font-size:1rem;margin:14px 0 6px}
 </div>
 <p class="note">This is a learning tool. Nothing you draw is saved or sent anywhere. Don’t test your real unlock pattern on any website.</p>
 </main>
-<script>
-(function(){
-var NS="http://www.w3.org/2000/svg",pad=document.getElementById("pad"),out=document.getElementById("out"),hint=document.getElementById("hint");
-var C=[50,150,250],dots=[],rings=[],seq=[],drawing=false,timer=null;
-var trail=document.createElementNS(NS,"polyline");trail.setAttribute("id","trail");pad.appendChild(trail);
-for(var i=0;i<9;i++){
-  var cx=C[i%3],cy=C[Math.floor(i/3)];
-  var r=document.createElementNS(NS,"circle");r.setAttribute("cx",cx);r.setAttribute("cy",cy);r.setAttribute("r",24);r.setAttribute("class","ring");pad.appendChild(r);rings.push(r);
-  var d=document.createElementNS(NS,"circle");d.setAttribute("cx",cx);d.setAttribute("cy",cy);d.setAttribute("r",9);d.setAttribute("class","dot");pad.appendChild(d);dots.push(d);
-  var t=document.createElementNS(NS,"text");t.setAttribute("x",cx);t.setAttribute("y",cy+30);t.setAttribute("class","num");t.textContent=i+1;pad.appendChild(t);
-}
-function pt(e){var b=pad.getBoundingClientRect();return[(e.clientX-b.left)*300/b.width,(e.clientY-b.top)*300/b.height];}
-function hit(p){for(var i=0;i<9;i++){var dx=p[0]-C[i%3],dy=p[1]-C[Math.floor(i/3)];if(dx*dx+dy*dy<30*30)return i;}return -1;}
-function add(i){
-  if(seq.indexOf(i)>-1)return;
-  if(seq.length){
-    var a=seq[seq.length-1],ar=Math.floor(a/3),ac=a%3,br=Math.floor(i/3),bc=i%3;
-    if((ar+br)%2===0&&(ac+bc)%2===0){var m=((ar+br)/2)*3+(ac+bc)/2;if(m!==a&&m!==i&&seq.indexOf(m)<0)mark(m);}
-  }
-  mark(i);
-}
-function mark(i){seq.push(i);dots[i].setAttribute("class","dot on");rings[i].setAttribute("class","ring on");}
-function draw(extra){
-  var s=seq.map(function(i){return C[i%3]+","+C[Math.floor(i/3)];});
-  if(extra)s.push(extra[0]+","+extra[1]);
-  trail.setAttribute("points",s.join(" "));
-}
-function reset(){clearInterval(timer);seq=[];draw();for(var i=0;i<9;i++){dots[i].setAttribute("class","dot");rings[i].setAttribute("class","ring");}}
-pad.addEventListener("pointerdown",function(e){reset();drawing=true;pad.setPointerCapture(e.pointerId);var p=pt(e),h=hit(p);if(h>-1)add(h);draw(p);hint.textContent="Drawing…";e.preventDefault();});
-pad.addEventListener("pointermove",function(e){if(!drawing)return;var p=pt(e),h=hit(p);if(h>-1)add(h);draw(p);});
-function finish(){
-  if(!drawing)return;drawing=false;draw();
-  if(seq.length<4){hint.textContent="Too short. Connect at least 4 dots.";out.innerHTML='<p class="empty">Android needs a pattern of 4 dots or more. Try again.</p>';return;}
-  hint.textContent="Pattern detected.";analyze(seq.map(function(i){return i+1;}));
-}
-pad.addEventListener("pointerup",finish);pad.addEventListener("pointercancel",finish);
-document.getElementById("clear").onclick=function(){reset();hint.textContent="Press and drag across the dots. Connect at least 4.";out.innerHTML='<p class="empty">Your analysis will appear here after you draw a pattern.</p>';};
-document.getElementById("replay").onclick=function(){
-  if(seq.length<4)return;var full=seq.slice();reset();var k=0;
-  timer=setInterval(function(){if(k>=full.length){clearInterval(timer);return;}mark(full[k]);draw();k++;},350);
-};
-var SHAPES={"1,2,3,5,7,8,9":"Z shape","3,2,1,5,9,8,7":"S shape","1,4,7,8,9":"L shape","7,4,1,2,3":"Inverted U (top arch)","1,4,7,8,9,6,3":"U shape","3,2,1,4,7,8,9":"C shape","7,4,1,5,9,6,3":"N shape","1,2,3,6,9":"Reverse L","1,5,9":"Diagonal","7,5,3":"Diagonal","1,2,3,6,5,4,7,8,9":"Snake (reading order zigzag)","1,4,7,8,5,2,3,6,9":"Snake (column zigzag)","1,2,3,4,5,6,7,8,9":"Reading order","2,5,8":"Middle column","4,5,6":"Middle row"};
-var TOTAL={4:1624,5:7152,6:26016,7:72912,8:140704,9:140704};
-function analyze(p){
-  var n=p.length,notes=[],score=Math.min(60,(n-3)*10),turns=0,jumps=0,adj=0,i;
-  var xy=function(v){return[(v-1)%3,Math.floor((v-1)/3)];};
-  var prev=null;
-  for(i=1;i<n;i++){
-    var a=xy(p[i-1]),b=xy(p[i]),dx=b[0]-a[0],dy=b[1]-a[1];
-    if(Math.abs(dx)+Math.abs(dy)===3)jumps++;
-    if(Math.abs(dx)<=1&&Math.abs(dy)<=1)adj++;
-    var dir=dx+","+dy;if(prev!==null&&prev!==dir)turns++;prev=dir;
-  }
-  score+=Math.min(15,turns*3)+Math.min(15,jumps*5);
-  var key=p.join(","),rev=p.slice().reverse().join(","),shape=SHAPES[key]||SHAPES[rev]||null;
-  var inc=p.every(function(v,j){return j===0||v>p[j-1];}),dec=p.every(function(v,j){return j===0||v<p[j-1];});
-  var corner=[1,3,7,9].indexOf(p[0])>-1;
-  if(shape){score-=25;notes.push(["bad","Looks like a well-known shape: "+shape+". Shapes and letters are the first thing guessers try."]);}
-  if((inc||dec)&&!shape){score-=15;notes.push(["bad","Numbers only go "+(inc?"up":"down")+" in the grid, like reading order. This is easy to guess."]);}
-  if(corner){score-=5;notes.push(["mid","It starts at a corner (dot "+p[0]+"). Most people start in a corner, usually the top-left."]);}else notes.push(["ok","It does not start at a corner, which makes it less predictable."]);
-  if(n<6)notes.push(["bad","Only "+n+" dots. Patterns with 6 or more dots are much harder to guess."]);else if(n>=8)notes.push(["ok","Long pattern ("+n+" dots)."]);
-  if(jumps>0)notes.push(["ok",jumps+" long jump"+(jumps>1?"s":"")+" between far-apart dots add unpredictability."]);
-  if(adj===n-1)notes.push(["mid","Every move goes to a neighbouring dot. Smooth, flowing patterns are more common."]);
-  if(turns<=1)notes.push(["bad","Almost no change of direction."]);
-  score=Math.max(0,Math.min(100,Math.round(score)));
-  var lab,col;if(score<35){lab="Weak";col="var(--bad)";}else if(score<55){lab="Fair";col="var(--mid)";}else if(score<75){lab="Good";col="var(--accent)";}else{lab="Strong";col="var(--ok)";}
-  var h='<div class="big"><span class="score" style="color:'+col+'">'+score+'</span><span class="label" style="color:'+col+'">'+lab+'</span></div><div class="bar"><i style="background:'+col+'"></i></div>';
-  h+='<dl><dt>Detected sequence</dt><dd class="seq">'+p.join(" → ")+'</dd><dt>Dots used</dt><dd>'+n+' of 9</dd><dt>Start dot</dt><dd>'+p[0]+(corner?" (corner)":"")+'</dd><dt>Direction changes</dt><dd>'+turns+'</dd><dt>Shape match</dt><dd>'+(shape||"No common shape found")+'</dd><dt>Search space</dt><dd>1 of '+TOTAL[n].toLocaleString("en-US")+' possible '+n+'-dot patterns</dd></dl>';
-  h+='<h2>What affects this score</h2><ul>'+notes.map(function(x){var c=x[0]==="bad"?"var(--bad)":x[0]==="mid"?"var(--mid)":"var(--ok)";return '<li style="list-style-color:'+c+'">'+x[1]+'</li>';}).join("")+'</ul>';
-  h+='<h2>Tip</h2><p class="empty">Use 7 or more dots, start away from the corners and include a couple of long jumps. For the best protection use a PIN or password instead of a pattern.</p>';
-  out.innerHTML=h;
-  var bar=out.querySelector(".bar i");requestAnimationFrame(function(){bar.style.width=score+"%";});
-}
-})();
-</script>
+<script src="js/app.js"></script>
 </body>
 </html>
